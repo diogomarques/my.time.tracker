@@ -1,3 +1,6 @@
 .Rproj.user
 .Rhistory
 .RData
+
+#private data
+*private.csv
