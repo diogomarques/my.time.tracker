@@ -1,5 +1,4 @@
-# TODO: load if not loaded
-library(dplyr)
+require(dplyr)
 DATA_FILE = "data_private.csv"
 
 load.data = function(file.name = DATA_FILE) {
