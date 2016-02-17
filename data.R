@@ -1,3 +1,4 @@
+# TODO: load if not loaded
 library(dplyr)
 DATA_FILE = "data_private.csv"
 
@@ -5,10 +6,9 @@ load.data = function(file.name = DATA_FILE) {
   read.csv2(file = DATA_FILE, colClasses = c("Date","numeric"))
 } 
 
+# @param day as character, e.g. "1980-11-26"
+# @param mins number of minutes
 update = function(day, mins) {
-  # TODO: add days at 0 mins when new days are added that are not the next day
-  # to the last of the recorded
-  
   # load
   data = load.data()
   # change if it exists
@@ -19,6 +19,13 @@ update = function(day, mins) {
   }
   # add if not
   else {
+    # if there's new dates between given and last in collection, zero them
+    last = data %>% summarize(last(date))
+    diff = as.numeric(as.Date(day) - last$`last(date)`)
+    for (i in (diff-1):1) {
+      data = rbind(data, data.frame(date=as.Date(day)-i, min=0))
+    }
+    # add new date
     data = rbind(data, data.frame(date=as.Date(day), min=mins))
   }
   # save
@@ -64,6 +71,8 @@ out = function(data = NULL) {
   # abline(h = 4 * 60 * 5, lty = 2)
   with(weekly , plot(week, ndays, type = "b", ylim = c(0, 7), main = "days per week"))
   abline(h = 5, lty = 2)
+  
+  # TODO: top 5 days!
   with(weekly , plot(week, avgmin, type = "b", ylim = c(0, 10 * 60), main = "avg daily per week"))
   abline(h = 8 * 60, lty = 2)
   abline(h = 4 * 60, lty = 2)
