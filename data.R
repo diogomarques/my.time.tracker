@@ -10,6 +10,16 @@ load.data = function(file.name = DATA_FILE) {
 update = function(day, mins) {
   # load
   data = load.data()
+  # update
+  data = update_data(day, mins, data)
+  # save
+  write.csv2(data, file = DATA_FILE, row.names = FALSE)
+  # re-create dash
+  out(data)
+}
+
+# recursive-ish version
+update_data = function(day, mins, data) {
   # change if it exists
   if((data %>% filter(as.character(date) == day) %>% summarize(n())) == 1) {
     data = data %>% 
@@ -18,19 +28,17 @@ update = function(day, mins) {
   }
   # add if not
   else {
-    # if there's new dates between given and last in collection, zero them
+    # zeroe all dates between last and given
     last = data %>% summarize(last(date))
-    diff = as.numeric(as.Date(day) - last$`last(date)`)
-    for (i in (diff-1):1) {
-      data = rbind(data, data.frame(date=as.Date(day)-i, min=0))
+    last = last$`last(date)`
+    diff = as.numeric(as.Date(day) - last)
+    for (i in 1:diff) {
+      data = rbind(data, data.frame(date=(last + i), min=0))
     }
     # add new date
-    data = rbind(data, data.frame(date=as.Date(day), min=mins))
+    data = update_data(day, mins, data)
   }
-  # save
-  write.csv2(data, file = DATA_FILE, row.names = FALSE)
-  # re-create dash
-  out(data)
+  return(data)
 }
 
 # wrangle daily & montthly
