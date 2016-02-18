@@ -1,16 +1,19 @@
 require(dplyr)
 DATA_FILE = "data_private.csv"
+# TODO: version control encrypted data, add key to .gitignore
 
 load.data = function(file.name = DATA_FILE) {
   read.csv2(file = DATA_FILE, colClasses = c("Date","numeric"))
 } 
 
-# @param day as character, e.g. "1980-11-26"
+# @param day as character, e.g. "1980-11-26", or "today"
 # @param mins number of minutes
 update = function(day, mins) {
   # load
   data = load.data()
   # update
+  if(day == "today")
+    day = as.character(Sys.Date())
   data = update_data(day, mins, data)
   # save
   write.csv2(data, file = DATA_FILE, row.names = FALSE)
