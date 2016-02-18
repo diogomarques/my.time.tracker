@@ -45,11 +45,16 @@ update_data = function(day, mins, data) {
 get.tidy.data = function(data) {
   daily = data %>%  mutate(rawweek = as.numeric(format(data$date, format = "%W")),
                       year = as.numeric(format(data$date, format = "%Y"))) %>%
-            mutate(week = (year - 2015) * 52 + rawweek - 49)
+                  mutate(week = (year - 2015) * 52 + rawweek - 49)
+  
   weekly = daily %>% group_by(week) %>% summarize(ndays = length(date[min>0]), 
                                                   totmin = sum(min),
                                                   avgmin = totmin / ndays,
-                                                  fte = totmin / (60 * 8))
+                                                  fte = totmin / (60 * 8)
+                                                  )
+  
+  top5weekly = daily %>% group_by(week) %>% filter(min > 0)  %>% top_n(5, min) %>% summarise(top5mean = mean(min)) %>% select(top5mean)
+  weekly = weekly %>% mutate(top5avgmin = top5weekly$top5mean) %>% select(week:avgmin, top5avgmin, fte)
   list(daily, weekly)
 }
 
@@ -65,29 +70,29 @@ out = function(data = NULL) {
   
   # plot
   par(mfrow=c(2,2))
-  with(daily %>% filter(min >= 60) , 
+  # daily
+  # TODO: paint bars on weekends
+  with(daily, 
        plot(date, min, type = "l",
-            ylim = c(0, 10 * 60), main = "daily (>= 60)"))
-  lines(lty = 3, with(daily %>% filter(min >= 60) %>% slice(1:(n()-1)), # ignore current day
+            ylim = c(0, 10 * 60), main = "daily (minutes)"))
+  lines(lty = 3, with(daily %>% slice(1:(n()-1)), # ignore current day
                       lowess(date, min)))
   abline(h = 8 * 60, lty = 2)
   abline(h = 4 * 60, lty = 2)
-  #abline(lm(min ~ date, data = daily %>% filter(min >= 60) %>% slice(1:(n()-1))), lty = 3)
-  # with(weekly , plot(week, totmin, type = "b", ylim = c(0, 10 * 60 * 5), main = "weekly"))
-  # abline(h = 8 * 60 * 5, lty = 2)
-  # abline(h = 4 * 60 * 5, lty = 2)
-  with(weekly , plot(week, ndays, type = "b", ylim = c(0, 7), main = "days per week"))
-  abline(h = 5, lty = 2)
-  
-  # TODO: top 5 days!
-  with(weekly , plot(week, avgmin, type = "b", ylim = c(0, 10 * 60), main = "avg daily per week"))
-  abline(h = 8 * 60, lty = 2)
-  abline(h = 4 * 60, lty = 2)
-  with(weekly , plot(week, fte, type = "l", ylim = c(0, 6), main = "fte per week"))
+  # weekly
+  with(weekly , plot(week, fte, type = "l", ylim = c(0, 6), main = "weekly (full time equiv.)"))
   abline(h = 5, lty = 2)
   abline(h = 2.5, lty = 2)
   lines(lty = 3,with(weekly %>% slice(1:(n()-1)), lowess(week, fte))) # ignore this week
-  #abline(lm(fte ~ week, data = weekly[1:(dim(weekly)[1]-1),]), lty = 3)
+  
+  # avg daily per week
+  with(weekly , plot(week, top5avgmin, type = "b", ylim = c(0, 10 * 60), main = "avg daily per week (top 5 days)"))
+  abline(h = 8 * 60, lty = 2)
+  abline(h = 4 * 60, lty = 2)
+  
+  # TODO: montly
+  with(weekly , plot(week, ndays, type = "b", ylim = c(0, 7), main = "days per week"))
+  abline(h = 5, lty = 2)
 }
 
 # show dash on load
