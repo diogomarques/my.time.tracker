@@ -48,7 +48,9 @@ update_data = function(day, mins, data) {
 get.tidy.data = function(data) {
   daily = data %>%  mutate(rawweek = as.numeric(format(data$date, format = "%W")),
                       year = as.numeric(format(data$date, format = "%Y"))) %>%
-                  mutate(week = (year - 2015) * 52 + rawweek - 49)
+    mutate(week = (year - 2015) * 52 + rawweek - 49) %>% 
+    mutate(is_weekend = (weekdays(as.Date(date)) %in% c("Saturday", "Sunday")))
+  daily
   
   weekly = daily %>% group_by(week) %>% summarize(ndays = length(date[min>0]), 
                                                   totmin = sum(min),
@@ -74,10 +76,12 @@ out = function(data = NULL) {
   # plot
   par(mfrow=c(2,2))
   # daily
-  # TODO: paint bars on weekends
-  with(daily, 
-       plot(date, min, type = "l",
-            ylim = c(0, 10 * 60), main = "daily (minutes)"))
+  with(daily, plot(date, min, type = "n", ylim = c(0, 10 * 60), main = "daily (minutes)"))
+  for (i in 1:nrow(weekends)) {
+    day = as.Date(daily %>% filter(is_weekend) %>% select(date) %>% slice(i) %>% first(1))
+    abline(v = day, lwd = 5, col=rgb(0.7,0.7,.7))
+  }
+  with(daily, points(date, min, type = "l"))
   lines(lty = 3, with(daily %>% slice(1:(n()-1)), # ignore current day
                       lowess(date, min)))
   abline(h = 8 * 60, lty = 2)
